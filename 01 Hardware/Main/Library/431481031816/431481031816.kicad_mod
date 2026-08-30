@@ -1,0 +1,242 @@
+(footprint "431481031816"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(descr "<b>WS-TASV</B><BR>SMT Tact Switch 6x6 mm with ground terminal,4 pins")
+	(property "Reference" "REF**"
+		(at -0.3 -4.775 0)
+		(layer "F.SilkS")
+		(uuid "33ae6b42-fe09-4e76-a04f-0579458affd5")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "431481031816"
+		(at 4.62 4.365 0)
+		(layer "F.Fab")
+		(uuid "50e01fc3-9b2f-4df1-90af-deda8508ac11")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "4eb24151-ee30-4710-add8-d7738f031719")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "f590ebc0-92e4-4508-8c91-c9abdbea8659")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(fp_line
+		(start -3.2 -1.2)
+		(end -3.2 -1)
+		(stroke
+			(width 0.2)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "5b12903f-1fdd-44b8-86bb-ff1e259427a3")
+	)
+	(fp_line
+		(start -3.2 1)
+		(end -3.2 1.2)
+		(stroke
+			(width 0.2)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "5201ed90-e110-4a4d-b1d5-28ec4da69b82")
+	)
+	(fp_line
+		(start -2.3 -3.15)
+		(end 2.3 -3.15)
+		(stroke
+			(width 0.2)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "e53dbe9d-0e61-4f0a-abbd-2715efa79eb5")
+	)
+	(fp_line
+		(start 2.3 3.15)
+		(end -2.3 3.15)
+		(stroke
+			(width 0.2)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "25929e61-5696-4fc2-a520-846835932cd2")
+	)
+	(fp_line
+		(start 3.2 -1.2)
+		(end 3.2 1.2)
+		(stroke
+			(width 0.2)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "53b5b44b-96a0-4d25-93db-c4981f905f55")
+	)
+	(fp_circle
+		(center 2 2.6)
+		(end 2.1 2.6)
+		(stroke
+			(width 0.2)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "9923a28b-70fb-456c-83cc-1d15bab96efd")
+	)
+	(fp_line
+		(start -4.7 -3.35)
+		(end 4.7 -3.35)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(layer "F.CrtYd")
+		(uuid "c08d5820-ae10-43ad-83b3-b9eefee206f8")
+	)
+	(fp_line
+		(start -4.7 3.35)
+		(end -4.7 -3.35)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(layer "F.CrtYd")
+		(uuid "341c08c7-00d6-4bfc-978d-e950f688cfeb")
+	)
+	(fp_line
+		(start 4.7 -3.35)
+		(end 4.7 3.35)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(layer "F.CrtYd")
+		(uuid "1c82ddc4-764b-458b-9344-6a7323275b3a")
+	)
+	(fp_line
+		(start 4.7 3.35)
+		(end -4.7 3.35)
+		(stroke
+			(width 0.1)
+			(type default)
+		)
+		(layer "F.CrtYd")
+		(uuid "e9ea9062-ba34-4abd-a326-0d1e75be34e1")
+	)
+	(fp_line
+		(start -3.1 -3.05)
+		(end -3.1 3.05)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "f89eb0fd-e8a5-4dc5-aba6-250089d49345")
+	)
+	(fp_line
+		(start -3.1 3.05)
+		(end 3.1 3.05)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "d7fbaf75-7529-4dcb-be8e-34ba81da6a71")
+	)
+	(fp_line
+		(start 3.1 -3.05)
+		(end -3.1 -3.05)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "cb723fe8-39e0-4d73-bfae-6c2f541c1038")
+	)
+	(fp_line
+		(start 3.1 3.05)
+		(end 3.1 -3.05)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "7f08ccb9-a6e8-4780-aeae-088a99d12811")
+	)
+	(pad "1" smd rect
+		(at 3.5 2.25)
+		(size 2 1.3)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(solder_mask_margin 0.102)
+		(uuid "ed0d1d1f-e141-4620-8cbb-63d452618ca7")
+	)
+	(pad "2" smd rect
+		(at -3.5 2.25)
+		(size 2 1.3)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(solder_mask_margin 0.102)
+		(uuid "653fd549-259d-450c-ab94-6157d181d11a")
+	)
+	(pad "3" smd rect
+		(at 3.5 -2.25)
+		(size 2 1.3)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(solder_mask_margin 0.102)
+		(uuid "4381129a-0267-4820-955e-f439395381ff")
+	)
+	(pad "4" smd rect
+		(at -3.5 -2.25)
+		(size 2 1.3)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(solder_mask_margin 0.102)
+		(uuid "ffb0ff89-cf2b-4dd2-9adc-baf96c891f44")
+	)
+	(pad "GND" smd rect
+		(at -3.75 0)
+		(size 1.5 1.3)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(solder_mask_margin 0.102)
+		(uuid "b382bdc1-46eb-41b5-8782-be3745359adc")
+	)
+	(embedded_fonts no)
+	(model "431481031816.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)
