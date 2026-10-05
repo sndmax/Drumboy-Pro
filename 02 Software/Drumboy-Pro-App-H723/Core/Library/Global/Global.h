@@ -6242,12 +6242,13 @@ const uint8_t kInitialLayerEnd                      = 100;
 const uint8_t kInitialLayerTiming                   = 0;
 const uint8_t kInitialLayerProbability              = 100;
 
-const uint8_t kInitialLayerEq                       = 1;
-const uint8_t kInitialLayerFilter                   = 2;
-const uint8_t kInitialLayerEffect                   = 2;
-const uint8_t kInitialLayerReverb                   = 1;
+// Layer routing selects an entry into the serial DSP chain; Reverb OFF bypasses it.
+const uint8_t kInitialLayerEq                       = 0;
+const uint8_t kInitialLayerFilter                   = 0;
+const uint8_t kInitialLayerEffect                   = 0;
+const uint8_t kInitialLayerReverb                   = 0;
 
-const MixerInMode kInitialLayerMixerInMode          = MIXER_IN_EQ;
+const MixerInMode kInitialLayerMixerInMode          = MIXER_IN_SEND;
 
 const uint8_t kInitialLayerLfo                      = 0;
 
