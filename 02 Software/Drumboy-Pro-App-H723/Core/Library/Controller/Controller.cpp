@@ -1966,7 +1966,8 @@ void Controller::keyboard_action() {
 
                                         case ALERT_BARUP:
                                             lcd_clearAlert();
-                                            rhythm_setBar(rhythm.bar + 1);
+                                            rhythm_setBar(rhythmBarDuplicatePending ? rhythm.bar * 2 : rhythm.bar + 1, rhythmBarDuplicatePending);
+                                            rhythmBarDuplicatePending = false;
                                             break;
 
                                         case ALERT_BARDOWN:
@@ -2235,6 +2236,7 @@ void Controller::keyboard_action() {
                                 break;
 
                             case KEY_COPY:
+                                keyboard.copyKeyPress = true;
                                 switch (menu) {
                                     case LAYER_INST_0_MENU:
 
@@ -2371,6 +2373,7 @@ void Controller::keyboard_action() {
                                 break;
 
                             case KEY_COPY:
+                                keyboard.copyKeyPress = false;
                                 if (layerInstCopyKeyFlag) {
                                     stopLongKeyTimer();
                                     keyboard.longKeyCounter = 0;
@@ -3408,7 +3411,7 @@ void Controller::encoder_incValue(uint8_t encoderNum_) {
 
         case ENC_RHYTHM_BAR:
             if ((!rhythm.barLock) && (rhythm.bar < kMaxBar))
-                rhythm_setBar(rhythm.bar + 1);
+                rhythm_setBar(keyboard.copyKeyPress ? rhythm.bar * 2 : rhythm.bar + 1, keyboard.copyKeyPress);
             break;
 
         case ENC_RHYTHM_QUANTIZE:
@@ -14256,14 +14259,16 @@ void Controller::rhythm_menuUp() {
 
             // Bar edits are blocked when bar lock is enabled.
             if (!rhythm.barLock) {
-                if (rhythm.bar < kMaxBar) {
+                uint8_t targetBar = keyboard.copyKeyPress ? rhythm.bar * 2 : rhythm.bar + 1;
+                if ((targetBar <= kMaxBar) && (rhythm.measure * targetBar <= kMaxSongMeasureTotal)) {
                     // During playback, show alert instead of changing song length.
                     if (playActive) {
                         alertFlag = true;
                         alertType = ALERT_BARUP;
+                        rhythmBarDuplicatePending = keyboard.copyKeyPress;
                         lcd_drawAlert();
                     } else {
-                        rhythm_setBar(rhythm.bar + 1);
+                        rhythm_setBar(targetBar, keyboard.copyKeyPress);
                     }
                 }
             }
@@ -14408,7 +14413,7 @@ void Controller::rhythm_setMeasure(uint8_t measure_) {
     }
 }
 
-void Controller::rhythm_setBar(uint8_t bar_) {
+void Controller::rhythm_setBar(uint8_t bar_, bool duplicate_) {
     /// @brief Sets bar count and rebuilds song timing/layout state.
 
     // 1. INPUT VALIDATION
@@ -14416,9 +14421,15 @@ void Controller::rhythm_setBar(uint8_t bar_) {
     if ((bar_ >= kMinBar) && (bar_ <= kMaxBar) && (rhythm.measure * bar_ <= kMaxSongMeasureTotal)) {
         // 2. CORE TIMING UPDATE
         // Store bar count and recalculate transport timing relationships.
+        uint16_t previousSongInterval = songInterval;
         rhythm.bar = bar_;
         calculateSongInterval();
-        adjustMeasureBarTiming();
+        if (duplicate_ && songInterval > previousSongInterval) {
+            // Growth keeps every original beat in range, including its ending fill.
+            layerSong_repeat(previousSongInterval);
+        } else {
+            adjustMeasureBarTiming();
+        }
 
         // 3. RHYTHM UI REFRESH
         // Refresh bar field when Rhythm menu is active.
@@ -21399,6 +21410,33 @@ void Controller::layerSong_calculateBeatFillLevel(uint8_t layerNum_, uint8_t ban
     Bank& bank = layer.bankLibrary[bankTab_];
     Beat& beat = bank.beatLibrary[beatNum_];
     bank.setBeatFill(beatNum_, beat.getFillType(), beat.getFillPattern(), beat.getFillTime(), fillLevel_);
+}
+
+void Controller::layerSong_repeat(uint16_t previousSongInterval_) {
+    /// @brief Repeats the active bank into the added song range for every instrument.
+    if (previousSongInterval_ == 0 || previousSongInterval_ >= songInterval) return;
+
+    for (uint8_t layerNum = 0; layerNum < kLayerLibrarySize; layerNum++) {
+        Bank& bank = layerLibrary[layerNum].bankLibrary[activeSongBank];
+        const uint8_t sourceCount = bank.lastActiveBeatNum + 1;
+        uint8_t nextBeat = sourceCount;
+
+        // Read only the original beats, even when adding more than one repetition.
+        for (uint16_t offset = previousSongInterval_; offset < songInterval; offset += previousSongInterval_) {
+            for (uint8_t i = 0; i < sourceCount && nextBeat < kBeatLibrarySize; i++) {
+                const Beat& source = bank.beatLibrary[i];
+                uint16_t startInterval = source.getStartInterval() + offset;
+                if (startInterval >= songInterval) break;
+                uint16_t endInterval = source.getEndInterval() + offset;
+                if (endInterval > songInterval) endInterval = songInterval;
+
+                // Allocate independent fill storage and preserve the original beat durations.
+                bank.setBeat(nextBeat, startInterval, endInterval);
+                bank.setBeatFill(nextBeat, source.getFillType(), source.getFillPattern(), source.getFillTime(), source.getFillLevel());
+                bank.lastActiveBeatNum = nextBeat++;
+            }
+        }
+    }
 }
 
 void Controller::layerSong_copy() {

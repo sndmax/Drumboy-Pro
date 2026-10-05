@@ -1066,6 +1066,7 @@ struct Keyboard {
     bool encKeyPress                                = false;
 
     bool shiftKeyPress                              = false;
+    bool copyKeyPress                               = false;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
