@@ -361,6 +361,7 @@ void Controller::update() {
         // Read physical rotary encoder counters and update corresponding parameters.
         encoder_read();
         encoder_action();
+        reverb_processProfile();
 
         // 3. OUTPUT & UI REFRESH
         // Refresh LED outputs and LCD frame content.
@@ -3720,6 +3721,10 @@ void Controller::encoder_incValue(uint8_t encoderNum_) {
             reverb_setActive(!reverb.active);
             break;
 
+        case ENC_REVERB_PROFILE:
+            reverb_stepProfile(true);
+            break;
+
         case ENC_REVERB_SIZE:
             if (reverb.size < kMaxReverbSize)
                 reverb_setSize(reverb.size + 1);
@@ -4266,6 +4271,10 @@ void Controller::encoder_decValue(uint8_t encoderNum_) {
 
         case ENC_REVERB_ACTIVE:
             reverb_setActive(!reverb.active);
+            break;
+
+        case ENC_REVERB_PROFILE:
+            reverb_stepProfile(false);
             break;
 
         case ENC_REVERB_SIZE:
@@ -5582,14 +5591,7 @@ SdResult Controller::sd_loadFile(uint8_t fileNum_) {
                     }
 
                     // Reverb processor parameters
-                    reverb_setActive(data[167]);
-                    reverb_setSize(data[168]);
-                    reverb_setDecay(data[169]);
-                    reverb_setDamping(data[170]);
-                    reverb_setPreDelay(data[171]);
-                    reverb_setSurround(data[172]);
-                    reverb_setDry(data[173]);
-                    reverb_setWet(data[174]);
+                    reverb_loadSettings(data + 167);
 
                     // LFO modulation settings
                     for (uint8_t i = 0; i < kLfoLibrarySize; i++) {
@@ -5944,14 +5946,7 @@ SdResult Controller::sd_saveFile(uint8_t fileNum_) {
     }
 
     // 2.9 REVERB SETTINGS
-    data[167] = reverb.active;
-    data[168] = reverb.size;
-    data[169] = reverb.decay;
-    data[170] = reverb.damping;
-    data[171] = reverb.preDelay;
-    data[172] = reverb.surround;
-    data[173] = reverb.dry;
-    data[174] = reverb.wet;
+    reverb_saveSettings(data + 167);
 
     // 2.10 LFO SETTINGS
     for (uint8_t i = 0; i < kLfoLibrarySize; i++) {
@@ -6381,14 +6376,7 @@ SdResult Controller::sd_loadDrumkit(uint8_t kitNum_) {
                     }
 
                     // Reverb processor parameters
-                    reverb_setActive(data[167]);
-                    reverb_setSize(data[168]);
-                    reverb_setDecay(data[169]);
-                    reverb_setDamping(data[170]);
-                    reverb_setPreDelay(data[171]);
-                    reverb_setSurround(data[172]);
-                    reverb_setDry(data[173]);
-                    reverb_setWet(data[174]);
+                    reverb_loadSettings(data + 167);
 
                     // LFO modulation settings
                     for (uint8_t i = 0; i < kLfoLibrarySize; i++) {
@@ -6671,14 +6659,7 @@ SdResult Controller::sd_saveDrumkit(uint8_t kitNum_) {
     }
 
     // 2.9 REVERB SETTINGS
-    data[167] = reverb.active;
-    data[168] = reverb.size;
-    data[169] = reverb.decay;
-    data[170] = reverb.damping;
-    data[171] = reverb.preDelay;
-    data[172] = reverb.surround;
-    data[173] = reverb.dry;
-    data[174] = reverb.wet;
+    reverb_saveSettings(data + 167);
 
     // 2.10 LFO SETTINGS
     for (uint8_t i = 0; i < kLfoLibrarySize; i++) {
@@ -9394,6 +9375,10 @@ void Controller::lcd_drawGlobalMenuData(uint8_t encoderNum_) {
                 textPtr = kNumberDataLibrary[reverb.size].nameLongR;
                 break;
 
+            case ENC_REVERB_PROFILE:
+                textPtr = reverb.profileName();
+                break;
+
             case ENC_REVERB_DECAY:
                 textPtr = kNumberDataLibrary[reverb.decay].nameLongR;
                 break;
@@ -10892,7 +10877,7 @@ void Controller::lcd_drawReverbMenu() {
     // Draw active and reverb parameter headers.
     lcd_setMenuHeaderState(CYAN);
     lcd.drawText(kHeaderActive, kMenuHeaderTextSize, kMenuHeaderX[0], kMenuHeaderY[0]);
-    lcd.drawText(kHeaderSize, kMenuHeaderTextSize, kMenuHeaderX[1], kMenuHeaderY[1]);
+    lcd.drawText("PROFILE   ", kMenuHeaderTextSize, kMenuHeaderX[1], kMenuHeaderY[1]);
     lcd.drawText(kHeaderDecay, kMenuHeaderTextSize, kMenuHeaderX[2], kMenuHeaderY[2]);
     lcd.drawText(kHeaderDamping, kMenuHeaderTextSize, kMenuHeaderX[3], kMenuHeaderY[3]);
     lcd.drawText(kHeaderPredelay, kMenuHeaderTextSize, kMenuHeaderX[4], kMenuHeaderY[4]);
@@ -10904,7 +10889,7 @@ void Controller::lcd_drawReverbMenu() {
     // Draw unit/sign labels for reverb fields.
     lcd_setMenuSignState(CYAN);
     lcd.drawText("   ", kMenuSignTextSize, kMenuSignBoxX[0], kMenuSignBoxY[0]);
-    lcd.drawText("  %", kMenuSignTextSize, kMenuSignBoxX[1], kMenuSignBoxY[1]);
+    lcd.drawText("   ", kMenuSignTextSize, kMenuSignBoxX[1], kMenuSignBoxY[1]);
     lcd.drawText("  %", kMenuSignTextSize, kMenuSignBoxX[2], kMenuSignBoxY[2]);
     lcd.drawText("  %", kMenuSignTextSize, kMenuSignBoxX[3], kMenuSignBoxY[3]);
     lcd.drawText(" MS", kMenuSignTextSize, kMenuSignBoxX[4], kMenuSignBoxY[4]);
@@ -10915,7 +10900,7 @@ void Controller::lcd_drawReverbMenu() {
     // 5. DATA DRAW
     // Draw current reverb parameter values.
     lcd_drawReverb_ActiveData();
-    lcd_drawReverb_SizeData();
+    lcd_drawReverb_ProfileData();
     lcd_drawReverb_DecayData();
     lcd_drawReverb_DampingData();
     lcd_drawReverb_PreDelayData();
@@ -10938,16 +10923,16 @@ void Controller::lcd_drawReverb_ActiveData() {
     lcd.drawText(textPtr, kMenuDataTextSize, kMenuDataX[0], kMenuDataY[0]);
 }
 
-void Controller::lcd_drawReverb_SizeData() {
-    /// @brief Draws reverb size value.
+void Controller::lcd_drawReverb_ProfileData() {
+    /// @brief Draws the applied or pending profile, or Custom for manual settings.
 
     // 1. STYLE SETUP
-    // Configure data style for size field.
+    // Configure data style for profile field.
     lcd_setMenuDataState(WHITE);
 
     // 2. VALUE DRAW
-    // Draw size text.
-    lcd.drawText(kNumberDataLibrary[reverb.size].nameLongR, kMenuDataTextSize, kMenuDataX[1], kMenuDataY[1]);
+    // Draw profile name.
+    lcd.drawText(reverb.profileName(), kMenuDataTextSize, kMenuDataX[1], kMenuDataY[1]);
 }
 
 void Controller::lcd_drawReverb_DecayData() {
@@ -12985,7 +12970,7 @@ void Controller::file_newAction() {
     filter_reset(1);
     effect_reset(0);
     effect_reset(1);
-    reverb_reset();
+    reverb_setProfile(REV_PROFILE_TIGHT);
 }
 
 void Controller::file_loadSelect() {
@@ -13394,7 +13379,7 @@ void Controller::drumkit_newAction() {
     filter_reset(1);
     effect_reset(0);
     effect_reset(1);
-    reverb_reset();
+    reverb_setProfile(REV_PROFILE_TIGHT);
 }
 
 void Controller::drumkit_loadSelect() {
@@ -17675,18 +17660,107 @@ void Controller::reverb_select() {
 }
 
 void Controller::reverb_reset() {
-    /// @brief Restores reverb state parameters to default values.
+    reverb_setProfile(REV_PROFILE_DEFAULT);
+}
 
-    // 1. PARAMETER RESET
-    // Re-apply default active, time-domain, modulation, and mix values.
-    reverb_setActive(kInitialReverbActive);
-    reverb_setSize(kInitialReverbSize);
-    reverb_setDecay(kInitialReverbDecay);
-    reverb_setDamping(kInitialReverbDamping);
-    reverb_setPreDelay(kInitialReverbPreDelay);
-    reverb_setSurround(kInitialReverbSurround);
-    reverb_setDry(kInitialReverbDry);
-    reverb_setWet(kInitialReverbWet);
+void Controller::reverb_setProfile(uint8_t profile_) {
+    if (profile_ >= REV_PROFILE_COUNT) return;
+    // The latest request replaces the queue without changing the active transition.
+    reverb.requestedProfile = profile_;
+    reverb.profileUiDirty = true;
+    transitionShowFlag = 1;
+    checkMenuTransition(REVERB_MENU, true);
+}
+
+void Controller::reverb_stepProfile(bool increase_) {
+    const uint8_t current = reverb.displayedProfile();
+    const uint8_t next = current >= REV_PROFILE_COUNT
+        ? (increase_ ? REV_PROFILE_DEFAULT : REV_PROFILE_TEXTURE)
+        : (increase_ ? (current + 1) % REV_PROFILE_COUNT
+                     : (current + REV_PROFILE_COUNT - 1) % REV_PROFILE_COUNT);
+    reverb_setProfile(next);
+}
+
+void Controller::reverb_processProfile() {
+    // Transition state is shared with the timer interrupt; keep publication atomic.
+    const uint32_t irqState = __get_PRIMASK();
+    __disable_irq();
+    if (reverb.requestedProfile < REV_PROFILE_COUNT &&
+        !reverb.genTransition.active && !reverb.mixTransition.active) {
+        reverb.applyingProfile = reverb.requestedProfile;
+        reverb.requestedProfile = REV_PROFILE_CUSTOM;
+        const bool wasActive = reverb.active;
+        if (!wasActive) {
+            reverb.applySettings(kReverbProfileLibrary[reverb.applyingProfile].settings);
+            reverb.cleanMemory();
+        }
+        reverb_genTransition(REV_MODE_PROFILE, wasActive, true);
+        reverb.profileUiDirty = true;
+    }
+    const bool refresh = reverb.profileUiDirty;
+    reverb.profileUiDirty = false;
+    __set_PRIMASK(irqState);
+
+    // Rendering stays in the main loop, never in the transition interrupt.
+    if (refresh) {
+        if (menu == REVERB_MENU) {
+            lcd_drawReverb_ActiveData();
+            lcd_drawReverb_ProfileData();
+            lcd_drawReverb_DecayData();
+            lcd_drawReverb_DampingData();
+            lcd_drawReverb_PreDelayData();
+            lcd_drawReverb_SurroundData();
+            lcd_drawReverb_DryData();
+            lcd_drawReverb_WetData();
+        }
+        const EncoderFunc functions[] = {ENC_REVERB_ACTIVE, ENC_REVERB_SIZE,
+            ENC_REVERB_PROFILE, ENC_REVERB_DECAY, ENC_REVERB_DAMPING,
+            ENC_REVERB_PREDELAY, ENC_REVERB_SURROUND, ENC_REVERB_DRY, ENC_REVERB_WET};
+        for (EncoderFunc function : functions) lcd_updateGlobalMenuData(function);
+        if (reverb.profileBusy()) {
+            transitionShowFlag = reverb.genTransition.phase == REV_PHASE_B ? 2 : 1;
+            if (menu == REVERB_MENU) transitionClearMenu = false;
+            checkMenuTransition(REVERB_MENU, true);
+        }
+    }
+}
+
+void Controller::reverb_loadSettings(const char* data_) {
+    const ReverbSettings value = {data_[0] != 0,
+        (uint8_t)data_[1], (uint8_t)data_[2], (uint8_t)data_[3],
+        (uint8_t)data_[4], (uint8_t)data_[5], (uint8_t)data_[6], (uint8_t)data_[7]};
+    const uint32_t irqState = __get_PRIMASK();
+    __disable_irq();
+    reverb.requestedProfile = reverb.applyingProfile = REV_PROFILE_CUSTOM;
+    reverb.genTransition = {};
+    reverb.mixTransition = {};
+    if (!reverb.applySettings(value)) {
+        reverb.applySettings(kReverbProfileLibrary[REV_PROFILE_DEFAULT].settings);
+    }
+    reverb.cleanMemory();
+    reverb.profileUiDirty = true;
+    __set_PRIMASK(irqState);
+    transitionClearFlag = true;
+    checkMenuTransition(REVERB_MENU, false);
+    checkEncoderTransition(ENC_REVERB_ACTIVE, false);
+    checkEncoderTransition(ENC_REVERB_PREDELAY, false);
+    checkEncoderTransition(ENC_REVERB_SURROUND, false);
+}
+
+void Controller::reverb_saveSettings(uint8_t* data_) {
+    // A timer may commit a profile during serialization: snapshot all eight bytes.
+    const uint32_t irqState = __get_PRIMASK();
+    __disable_irq();
+    const ReverbSettings value = reverb.settings();
+    __set_PRIMASK(irqState);
+    data_[0] = value.active;
+    data_[1] = value.size;
+    data_[2] = value.decay;
+    data_[3] = value.damping;
+    data_[4] = value.preDelay;
+    data_[5] = value.surround;
+    data_[6] = value.dry;
+    data_[7] = value.wet;
 }
 
 void Controller::reverb_menuRight() {
@@ -17726,7 +17800,7 @@ void Controller::reverb_menuUp() {
             break;
 
         case 1:
-            if (reverb.size < kMaxReverbSize) reverb_setSize(reverb.size + 1);
+            reverb_stepProfile(true);
             break;
 
         case 2:
@@ -17778,7 +17852,7 @@ void Controller::reverb_menuDown() {
             break;
 
         case 1:
-            if (reverb.size > kMinReverbSize) reverb_setSize(reverb.size - 1);
+            reverb_stepProfile(false);
             break;
 
         case 2:
@@ -17810,6 +17884,9 @@ void Controller::reverb_menuDown() {
 void Controller::reverb_setActive(bool active_) {
     /// @brief Sets reverb active state using transition flow when runtime conditions allow.
 
+    if (reverb.profileBusy()) return;
+    reverb.profileUiDirty = true;
+
     // 1. TRANSITION GUARD
     // Ignore requests while a previous reverb transition is still active.
     if (!reverb.genTransition.active) {
@@ -17835,6 +17912,9 @@ void Controller::reverb_setActive(bool active_) {
 void Controller::reverb_setSize(uint8_t size_) {
     /// @brief Sets reverb room-size index and refreshes dependent UI/global state.
 
+    if (reverb.profileBusy()) return;
+    reverb.profileUiDirty = true;
+
     // 1. INPUT VALIDATION
     // Accept only values inside configured size limits.
     if ((size_ >= kMinReverbSize) && (size_ <= kMaxReverbSize)) {
@@ -17844,13 +17924,16 @@ void Controller::reverb_setSize(uint8_t size_) {
 
         // 3. UI & GLOBAL REFRESH
         // Refresh Reverb tab data (if visible) and global summary field.
-        if (menu == REVERB_MENU) lcd_drawReverb_SizeData();
+        if (menu == REVERB_MENU) lcd_drawReverb_ProfileData();
         lcd_updateGlobalMenuData(ENC_REVERB_SIZE);
     }
 }
 
 void Controller::reverb_setDecay(uint8_t decay_) {
     /// @brief Sets reverb decay index and refreshes dependent UI/global state.
+
+    if (reverb.profileBusy()) return;
+    reverb.profileUiDirty = true;
 
     // 1. INPUT VALIDATION
     // Accept only values inside configured decay limits.
@@ -17869,6 +17952,9 @@ void Controller::reverb_setDecay(uint8_t decay_) {
 void Controller::reverb_setDamping(uint8_t damping_) {
     /// @brief Sets reverb damping index and refreshes dependent UI/global state.
 
+    if (reverb.profileBusy()) return;
+    reverb.profileUiDirty = true;
+
     // 1. INPUT VALIDATION
     // Accept only values inside configured damping limits.
     if ((damping_ >= kMinReverbDamping) && (damping_ <= kMaxReverbDamping)) {
@@ -17885,6 +17971,9 @@ void Controller::reverb_setDamping(uint8_t damping_) {
 
 void Controller::reverb_setPreDelay(uint8_t preDelay_) {
     /// @brief Sets reverb pre-delay and applies transition path when reverb is active.
+
+    if (reverb.profileBusy()) return;
+    reverb.profileUiDirty = true;
 
     // 1. INPUT VALIDATION
     // Accept only values inside configured pre-delay limits.
@@ -17920,6 +18009,9 @@ void Controller::reverb_setPreDelay(uint8_t preDelay_) {
 void Controller::reverb_setSurround(uint8_t surround_) {
     /// @brief Sets reverb surround amount and applies transition path when reverb is active.
 
+    if (reverb.profileBusy()) return;
+    reverb.profileUiDirty = true;
+
     // 1. INPUT VALIDATION
     // Accept only values inside configured surround limits.
     if ((surround_ >= kMinReverbSurround) && (surround_ <= kMaxReverbSurround)) {
@@ -17953,6 +18045,9 @@ void Controller::reverb_setSurround(uint8_t surround_) {
 
 void Controller::reverb_setDry(uint8_t dry_) {
     /// @brief Sets reverb dry mix component with optional wet compensation and transition.
+
+    if (reverb.profileBusy()) return;
+    reverb.profileUiDirty = true;
 
     // 1. INPUT VALIDATION & TRANSITION GUARD
     // Accept valid range only when mix transition engine is idle.
@@ -17991,6 +18086,9 @@ void Controller::reverb_setDry(uint8_t dry_) {
 
 void Controller::reverb_setWet(uint8_t wet_) {
     /// @brief Sets reverb wet mix component with optional dry compensation and transition.
+
+    if (reverb.profileBusy()) return;
+    reverb.profileUiDirty = true;
 
     // 1. INPUT VALIDATION & TRANSITION GUARD
     // Accept valid range only when mix transition engine is idle.
@@ -18087,6 +18185,17 @@ void Controller::reverb_genTransition(ReverbTransitionMode mode_, bool activeAct
             transitionShowFlag = 1;
             checkMenuTransition(REVERB_MENU, true);
             checkEncoderTransition(ENC_REVERB_SURROUND, true);
+            break;
+
+        case REV_MODE_PROFILE:
+            gTransition.phase = activeActive_ ? REV_PHASE_A : REV_PHASE_B;
+            gTransition.activeDry = activeActive_ ? 0.0f : 1.0f;
+            gTransition.targetDry = activeActive_ ? 1.0f : 0.0f;
+            gTransition.activeWet = activeActive_ ? 1.0f : 0.0f;
+            gTransition.targetWet = activeActive_ ? 0.0f : 1.0f;
+            transitionShowFlag = activeActive_ ? 1 : 2;
+            if (menu == REVERB_MENU) transitionClearMenu = false;
+            checkMenuTransition(REVERB_MENU, true);
             break;
     }
 
@@ -22423,7 +22532,8 @@ void Controller::processAudioReverb() {
                 finalReverb = (mixedSignal * reverb.genTransition.activeWet) + (inputSample * reverb.genTransition.activeDry);
                 reverb.surroundBuffer[reverb.surround_recordInterval] = finalReverb;
 
-                if ((reverb.genTransition.mode == REV_MODE_ACTIVE) || (reverb.genTransition.mode == REV_MODE_SURROUND)) {
+                if ((reverb.genTransition.mode == REV_MODE_ACTIVE) || (reverb.genTransition.mode == REV_MODE_SURROUND) ||
+                    (reverb.genTransition.mode == REV_MODE_PROFILE)) {
                     outL = finalReverb;
                     outR = (reverb.surroundBuffer[reverb.surround_playInterval] * reverb.genTransition.activeWet) + (finalReverb * reverb.genTransition.activeDry);
                 } else {
@@ -24283,6 +24393,35 @@ void Controller::interruptTransition() {
                     checkEncoderTransition(ENC_REVERB_ACTIVE, false);
                     break;
 
+                case REV_MODE_PROFILE:
+                    if (gTransition.phase == REV_PHASE_A) {
+                        // Both outputs have reached bypass. Commit the whole preset here.
+                        const uint32_t irqState = __get_PRIMASK();
+                        __disable_irq();
+                        reverb.applySettings(kReverbProfileLibrary[reverb.applyingProfile].settings);
+                        reverb.cleanMemory();
+                        __set_PRIMASK(irqState);
+                        gTransition.phase = REV_PHASE_B;
+                        gTransition.activeDry = 1.0f;
+                        gTransition.targetDry = 0.0f;
+                        gTransition.activeWet = 0.0f;
+                        gTransition.targetWet = 1.0f;
+                        reverb_calculateGenTransition();
+                        transitionShowFlag = 2;
+                        checkMenuTransition(REVERB_MENU, true);
+                    } else {
+                        gTransition.activeDry = 0.0f;
+                        gTransition.activeWet = 1.0f;
+                        gTransition.active = false;
+                        gTransition.mode = REV_MODE_NONE;
+                        gTransition.phase = REV_PHASE_NONE;
+                        reverb.applyingProfile = REV_PROFILE_CUSTOM;
+                        transitionClearFlag = true;
+                        checkMenuTransition(REVERB_MENU, false);
+                    }
+                    reverb.profileUiDirty = true;
+                    break;
+
                 case REV_MODE_PREDELAY:
                     switch (gTransition.phase) {
                         case REV_PHASE_NONE:
@@ -24388,6 +24527,9 @@ void Controller::interruptTransition() {
                 break;
         }
         if ((mTransition.actionDry == REV_ACTION_NONE) && (mTransition.actionWet == REV_ACTION_NONE)) {
+            // Land exactly on the targets, especially Dry=0 for Texture.
+            reverb.dryFloat = mTransition.targetDry;
+            reverb.wetFloat = mTransition.targetWet;
             mTransition.active = false;
         }
     }

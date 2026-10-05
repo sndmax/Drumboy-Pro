@@ -30,11 +30,27 @@ The MCU sits at the center of six subsystems: an NT35510 display driven over a 1
 - **10 sample layers**, each independently modulated by a 10-slot LFO matrix (sample-and-hold at note-trigger time)
 - **Per-layer routing** into a shared DSP chain: parametric EQ → 2× multimode filter → 2× send effect → stereo reverb
 - **9 effect types** per send slot: Delay, Chorus, Flanger, Phaser, Compressor, Expander, Overdrive, Distortion, Bitcrusher
-- **Freeverb/Schroeder-Moorer style reverb** with pre-delay and stereo surround derivation
+- **Freeverb/Schroeder-Moorer style reverb** with pre-delay, stereo surround derivation, and nine built-in profiles: Default, Tight, Snap, Chamber, Warehouse, Disco, Dub, Ghost, Texture
 - **Sequencer** with 5 song banks per layer, 64 beats per bank, and algorithmic complex-fill generation (timing alignment × level curve templates)
 - **MIDI In/Out** (opto-isolated input) and **Sync In/Out** for external clock/gate sync
 - **SD-card firmware updates** via a dedicated bootloader with CRC-32 verified staged writes
 - Fully open hardware (KiCad) and firmware (C/C++ against the STM32 HAL) — no CMSIS-DSP or external DSP library, all hand-rolled biquad/delay-line DSP on the Cortex-M7 FPU
+
+Choose **Profile** with the second encoder in the Reverb menu or select the field with left/right and change it with up/down. Each profile enables reverb and applies its complete settings through a bypass transition. **Tight** is the starting profile at initialization and for new projects and drumkits. **Default** retains the original settings for an explicit reverb reset and recovery from invalid saved parameters.
+
+| Profile | Intended use | Size | Decay | Damping | PreDelay (ms) | Surround (%) | Dry | Wet |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| Default | Original reset settings | 25 | 50 | 30 | 5 | 25 | 100 | 50 |
+| Tight | Techno/house grooves, hats and shakers | 25 | 32 | 65 | 8 | 25 | 100 | 18 |
+| Snap | Breakbeat, fast snare/clap and percussion | 10 | 15 | 40 | 10 | 10 | 100 | 18 |
+| Chamber | Dark hypnotic percussion, rims and toms | 38 | 55 | 70 | 3 | 30 | 100 | 25 |
+| Warehouse | Sparse hits, rides and transitions | 68 | 40 | 60 | 20 | 40 | 100 | 25 |
+| Disco | Brighter house/Italo claps, snares and stabs | 40 | 50 | 25 | 20 | 30 | 100 | 30 |
+| Dub | Leftfield accents and delay into reverb | 52 | 70 | 75 | 30 | 40 | 100 | 35 |
+| Ghost | Wet textures with a shorter tail | 72 | 80 | 70 | 4 | 65 | 0 | 100 |
+| Texture | Long atmospheric tails and transitions | 100 | 100 | 65 | 40 | 80 | 0 | 100 |
+
+**Ghost** and **Texture** use Dry 0% / Wet 100% on the shared reverb bus: every source routed into reverb loses its direct signal. For a dedicated texture, route only the intended sources into that bus. Manual edits display **Custom** unless all settings match a built-in profile; the global Size encoder assignment remains available. Projects and drumkits keep the existing file format and restore the profile name from the saved settings. Older Room, Hall, Dark and Ambient settings load as Custom with their parameters preserved.
 
 ## Repository structure
 

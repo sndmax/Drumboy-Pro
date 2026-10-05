@@ -1202,7 +1202,8 @@ typedef enum {
     ENC_SONG_TIMING                                 = 0x5F,
     ENC_SONG_VELOCITY                               = 0x60,
 
-    ENC_FNC_NONE                                    = 0x61
+    ENC_FNC_NONE                                    = 0x61,
+    ENC_REVERB_PROFILE                              = 0x62
 } EncoderFunc;
 
 const EncoderFunc encoderLocalFunction[][8] = {
@@ -1233,7 +1234,7 @@ const EncoderFunc encoderLocalFunction[][8] = {
     // EFFECT_1_MENU = 0x0C
     {ENC_EFFECT_1_ACTIVE, ENC_EFFECT_1_TYPE, ENC_EFFECT_1_PARAM_A, ENC_EFFECT_1_PARAM_B, ENC_EFFECT_1_PARAM_C, ENC_EFFECT_1_PARAM_D, ENC_EFFECT_1_PARAM_E, ENC_EFFECT_1_PARAM_F},
     // REVERB_MENU = 0x0D
-    {ENC_REVERB_ACTIVE, ENC_REVERB_SIZE, ENC_REVERB_DECAY, ENC_REVERB_DAMPING, ENC_REVERB_PREDELAY, ENC_REVERB_SURROUND, ENC_REVERB_DRY, ENC_REVERB_WET},
+    {ENC_REVERB_ACTIVE, ENC_REVERB_PROFILE, ENC_REVERB_DECAY, ENC_REVERB_DAMPING, ENC_REVERB_PREDELAY, ENC_REVERB_SURROUND, ENC_REVERB_DRY, ENC_REVERB_WET},
     // LFO_MENU = 0x0E
     {ENC_LFO_ACTIVE, ENC_LFO_TYPE, ENC_FNC_OFF, ENC_FNC_OFF, ENC_LFO_RATE, ENC_LFO_PHASE, ENC_LFO_INVERT, ENC_LFO_DEPTH},
     // LAYER_INST_0_MENU = 0x0F
@@ -1368,7 +1369,9 @@ const EncoderFuncData kEncoderFuncDataLibrary[] = {
     {ENC_SONG_FILL,           ENC_RES_M, "FILL      ", "SONG  ", "   ", false},
     {ENC_SONG_PATTERN,        ENC_RES_M, "PATTERN   ", "SONG  ", "   ", false},
     {ENC_SONG_TIMING,         ENC_RES_M, "TIMING    ", "SONG  ", "   ", false},
-    {ENC_SONG_VELOCITY,       ENC_RES_M, "VELOCITY  ", "SONG  ", "   ", false}
+    {ENC_SONG_VELOCITY,       ENC_RES_M, "VELOCITY  ", "SONG  ", "   ", false},
+    {ENC_FNC_NONE,            ENC_RES_F, "----------", "      ", "   ", false},
+    {ENC_REVERB_PROFILE,      ENC_RES_S, "PROFILE   ", "REVERB", "   ", false}
 };
 
 typedef enum {
@@ -1386,7 +1389,7 @@ const uint8_t kMinEncoderGlobalFunction             = 0;
 const uint8_t kMaxEncoderGlobalFunction             = 68;
 
 const uint8_t kMinEncoderLocalFunction              = 0;
-const uint8_t kMaxEncoderLocalFunction              = 96;
+const uint8_t kMaxEncoderLocalFunction              = 98;
 
 const uint8_t kMinEncoderResolution                 = 0;
 const uint8_t kMaxEncoderResolution                 = 8;
@@ -5615,14 +5618,58 @@ const uint8_t kMaxReverbWet                         = 100;
 
 const bool kInitialReverbActive                     = true;
 const uint8_t kInitialReverbSize                    = 25;
-const uint8_t kInitialReverbDecay                   = 50;
-const uint8_t kInitialReverbDamping                 = 30;
-const uint8_t kInitialReverbPreDelay                = 5;
+const uint8_t kInitialReverbDecay                   = 32;
+const uint8_t kInitialReverbDamping                 = 65;
+const uint8_t kInitialReverbPreDelay                = 8;
 const uint8_t kInitialReverbSurround                = 5;
 const uint8_t kInitialReverbDry                     = 100;
-const uint8_t kInitialReverbWet                     = 50;
+const uint8_t kInitialReverbWet                     = 18;
 
 #define REVERB_ANTI_DENORMAL 1.0e-9f
+
+enum ReverbProfileId : uint8_t {
+    REV_PROFILE_DEFAULT,
+    REV_PROFILE_TIGHT,
+    REV_PROFILE_SNAP,
+    REV_PROFILE_CHAMBER,
+    REV_PROFILE_WAREHOUSE,
+    REV_PROFILE_DISCO,
+    REV_PROFILE_DUB,
+    REV_PROFILE_GHOST,
+    REV_PROFILE_TEXTURE,
+    REV_PROFILE_COUNT,
+    REV_PROFILE_CUSTOM = 0xFF
+};
+
+struct ReverbSettings {
+    bool active;
+    uint8_t size, decay, damping, preDelay, surround, dry, wet;
+
+    bool operator==(const ReverbSettings& other) const {
+        return active == other.active && size == other.size && decay == other.decay &&
+               damping == other.damping && preDelay == other.preDelay &&
+               surround == other.surround && dry == other.dry && wet == other.wet;
+    }
+};
+
+struct ReverbProfile {
+    char nameLongR[11];
+    ReverbSettings settings;
+};
+
+// Delay and surround values are indices into the existing time tables.
+const ReverbProfile kReverbProfileLibrary[REV_PROFILE_COUNT] = {
+    {"   Default", {true,  25,  50, 30,  5,  5, 100,  50}},
+    {"     Tight", {true,  25,  32, 65,  8,  5, 100,  18}},
+    {"      Snap", {true,  10,  15, 40, 10,  2, 100,  18}},
+    {"   Chamber", {true,  38,  55, 70,  3,  6, 100,  25}},
+    {" Warehouse", {true,  68,  40, 60, 11,  8, 100,  25}},
+    {"     Disco", {true,  40,  50, 25, 11,  6, 100,  30}},
+    {"       Dub", {true,  52,  70, 75, 12,  8, 100,  35}},
+    {"     Ghost", {true,  72,  80, 70,  4, 13,   0, 100}},
+    {"   Texture", {true, 100, 100, 65, 13, 16,   0, 100}}
+};
+const char kReverbCustomName[] = "    Custom";
 
 struct ReverbPreDelayData {
     char nameLongR[11];
@@ -5690,7 +5737,8 @@ typedef enum {
     REV_MODE_ACTIVE                                 = 0x01,
     REV_MODE_PREDELAY                               = 0x02,
     REV_MODE_DAMPING                                = 0x03,
-    REV_MODE_SURROUND                               = 0x04
+    REV_MODE_SURROUND                               = 0x04,
+    REV_MODE_PROFILE                                = 0x05
 } ReverbTransitionMode;
 
 typedef enum {
@@ -5742,6 +5790,57 @@ struct Reverb {
 
     ReverbGenTransition genTransition;
     ReverbMixTransition mixTransition;
+
+    volatile uint8_t requestedProfile = REV_PROFILE_CUSTOM;
+    volatile uint8_t applyingProfile = REV_PROFILE_CUSTOM;
+    volatile bool profileUiDirty = false;
+
+    bool profileBusy() const {
+        return requestedProfile < REV_PROFILE_COUNT || applyingProfile < REV_PROFILE_COUNT;
+    }
+
+    ReverbSettings settings() const {
+        return {active, size, decay, damping, preDelay, surround, dry, wet};
+    }
+
+    uint8_t profile() const {
+        const ReverbSettings current = settings();
+        for (uint8_t i = 0; i < REV_PROFILE_COUNT; ++i) {
+            if (current == kReverbProfileLibrary[i].settings) return i;
+        }
+        return REV_PROFILE_CUSTOM;
+    }
+
+    uint8_t displayedProfile() const {
+        if (requestedProfile < REV_PROFILE_COUNT) return requestedProfile;
+        if (applyingProfile < REV_PROFILE_COUNT) return applyingProfile;
+        return profile();
+    }
+
+    const char* profileName() const {
+        const uint8_t id = displayedProfile();
+        return id < REV_PROFILE_COUNT ? kReverbProfileLibrary[id].nameLongR : kReverbCustomName;
+    }
+
+    bool applySettings(const ReverbSettings& value) {
+        if (value.size > kMaxReverbSize || value.decay > kMaxReverbDecay ||
+            value.damping > kMaxReverbDamping || value.preDelay > kMaxReverbPreDelay ||
+            value.surround > kMaxReverbSurround || value.dry > kMaxReverbDry ||
+            value.wet > kMaxReverbWet || (limitMix && value.dry + value.wet > limitMixData)) return false;
+        active = value.active;
+        setSize(value.size);
+        setDecay(value.decay);
+        setDamping(value.damping);
+        preDelay = value.preDelay;
+        surround = value.surround;
+        setPreDelay(kReverbPreDelayDataLibrary[preDelay].data);
+        setSurround(kReverbSurroundDataLibrary[surround].data);
+        dry = value.dry;
+        wet = value.wet;
+        dryFloat = kNumberDataLibrary[dry].stdMultiplier;
+        wetFloat = kNumberDataLibrary[wet].stdMultiplier;
+        return true;
+    }
 
     const bool limitMix                             = true;
     const uint8_t limitMixData                      = 150;
@@ -5839,6 +5938,10 @@ struct Reverb {
     float apassFeedback                             = 0.35f;
 
     void initialize() {
+        genTransition = {};
+        mixTransition = {};
+        requestedProfile = applyingProfile = REV_PROFILE_CUSTOM;
+        profileUiDirty = false;
         active = kInitialReverbActive;
         size = kInitialReverbSize;
         decay = kInitialReverbDecay;

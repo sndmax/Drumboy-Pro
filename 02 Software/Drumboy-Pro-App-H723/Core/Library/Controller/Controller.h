@@ -605,7 +605,7 @@ class Controller {
     // Reverb menu functions
     void lcd_drawReverbMenu();
     void lcd_drawReverb_ActiveData();
-    void lcd_drawReverb_SizeData();
+    void lcd_drawReverb_ProfileData();
     void lcd_drawReverb_DecayData();
     void lcd_drawReverb_DampingData();
     void lcd_drawReverb_PreDelayData();
@@ -882,6 +882,11 @@ class Controller {
 
     void reverb_select();
     void reverb_reset();
+    void reverb_setProfile(uint8_t profile_);
+    void reverb_stepProfile(bool increase_);
+    void reverb_processProfile();
+    void reverb_loadSettings(const char* data_);
+    void reverb_saveSettings(uint8_t* data_);
 
     void reverb_menuRight();
     void reverb_menuLeft();
