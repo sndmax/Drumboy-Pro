@@ -212,6 +212,7 @@ class Controller {
 
     bool rhythmUnlockKeyFlag, rhythmUnlockActionFlag;
     bool rhythmLockKeyFlag, rhythmLockActionFlag;
+    bool rhythmBarDuplicatePending = false;                            // Copy modifier captured for playback confirmation
 
     /* Mixer & Amplifier Flags ----------------------------------- */
 
@@ -736,7 +737,7 @@ class Controller {
 
     void rhythm_setTempo(uint8_t tempo_);
     void rhythm_setMeasure(uint8_t measure_);
-    void rhythm_setBar(uint8_t bar_);
+    void rhythm_setBar(uint8_t bar_, bool duplicate_ = false);
     void rhythm_setQuantize(uint8_t quantize_);
 
     /* Mixer Functions ------------------------------------------- */
@@ -1005,6 +1006,7 @@ class Controller {
     void layerSong_calculateBeatFillLevel(uint8_t layerNum_, uint8_t bankTab_, uint8_t beatNum_, uint8_t fillLevel_);
 
     void layerSong_copy();
+    void layerSong_repeat(uint16_t previousSongInterval_);
     void layerSong_paste();
 
     void layerSong_selectBank(uint8_t bankNum_);
